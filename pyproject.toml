@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "jf8net"
+version = "0.1.0"
+description = "Python library for the JF8Call WebSocket API"
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.10"
+dependencies = ["websockets>=11.0"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["jf8net*"]
