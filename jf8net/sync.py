@@ -261,6 +261,9 @@ class JF8ClientSync:
     def get_solar(self):
         return self._run(self._async.get_solar())
 
+    def get_version(self):
+        return self._run(self._async.get_version())
+
     def get_qso_log(self, offset: int = 0, limit: int = 100):
         return self._run(self._async.get_qso_log(offset=offset, limit=limit))
 

@@ -16,12 +16,14 @@ import websockets.exceptions
 from ._models import (
     AudioDevices, BandEntry, Config, DecodedMessage, FrameUpdate,
     InboxMessage, QsoEntry, RadioStatus, SolarData, Spectrum, Status, TxFrame,
+    VersionInfo,
 )
 from ._parsers import (
     config_kwargs_to_api,
     parse_band_entry, parse_config, parse_decoded_message, parse_frame_update,
     parse_inbox_message, parse_qso_entry, parse_radio_status,
     parse_solar_data, parse_spectrum, parse_status, parse_tx_frame,
+    parse_version_info,
 )
 
 logger = logging.getLogger(__name__)
@@ -624,6 +626,18 @@ class JF8Client:
         """Return the latest NOAA solar indices."""
         d = await self._cmd("solar.get")
         return parse_solar_data(d)
+
+    # ── Version ───────────────────────────────────────────────────────────────
+
+    async def get_version(self) -> VersionInfo:
+        """Return JF8Call version information.
+
+        The returned :class:`VersionInfo` includes the full version string,
+        major/minor/patch integers, and a release label
+        (``"ALPHA"``, ``"BETA"``, ``"RC"``, or ``"RELEASE"``).
+        """
+        d = await self._cmd("version.get")
+        return parse_version_info(d)
 
     # ── QSO log ───────────────────────────────────────────────────────────────
 

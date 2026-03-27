@@ -331,6 +331,19 @@ class TxFrame:
 
 
 @dataclass
+class VersionInfo:
+    """JF8Call application version details."""
+    version: str
+    major: int
+    minor: int
+    patch: int
+    release: str  # "ALPHA", "BETA", "RC", or "RELEASE"
+
+    def __str__(self) -> str:
+        return self.version
+
+
+@dataclass
 class AudioDevices:
     """Available PortAudio input and output device names."""
     inputs: List[str]

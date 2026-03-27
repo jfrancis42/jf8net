@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jf8net"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python library for the JF8Call WebSocket API"
 license = { text = "GPL-3.0-or-later" }
 requires-python = ">=3.10"

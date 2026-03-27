@@ -47,9 +47,10 @@ from ._models import (
     SolarData,
     QsoEntry,
     InboxMessage,
+    VersionInfo,
 )
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = [
     "JF8Client",
     "JF8Error",
@@ -70,4 +71,5 @@ __all__ = [
     "SolarData",
     "QsoEntry",
     "InboxMessage",
+    "VersionInfo",
 ]

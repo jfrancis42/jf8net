@@ -7,7 +7,7 @@ from typing import Any, List
 from ._models import (
     DecodedMessage, FrameUpdate, Status, Config,
     RadioStatus, TxFrame, AudioDevices, Spectrum,
-    BandEntry, SolarData, QsoEntry, InboxMessage,
+    BandEntry, SolarData, QsoEntry, InboxMessage, VersionInfo,
 )
 
 
@@ -246,3 +246,13 @@ def config_kwargs_to_api(kwargs: dict) -> dict:
                 )
         result[api_key] = v
     return result
+
+
+def parse_version_info(d: dict) -> VersionInfo:
+    return VersionInfo(
+        version=str(d.get("version", "")),
+        major=int(d.get("major", 0)),
+        minor=int(d.get("minor", 0)),
+        patch=int(d.get("patch", 0)),
+        release=str(d.get("release", "RELEASE")),
+    )
