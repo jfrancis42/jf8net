@@ -49,7 +49,7 @@ from ._models import (
     InboxMessage,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __all__ = [
     "JF8Client",
     "JF8Error",
