@@ -19,13 +19,27 @@ class MessageType:
     INFO_REPLY        = 6
     STATUS_QUERY      = 7
     STATUS_REPLY      = 8
-    COMPOUND_DIRECTED = 9
+    GRID_QUERY        = 9
+    GRID_REPLY        = 10
+    HEARING_QUERY     = 11
+    HEARING_REPLY     = 12
+    ACK               = 13
+    MSG_COMMAND       = 14
+    QUERY_MSGS        = 15
+    QUERY_MSG         = 16
+    MSG_AVAILABLE     = 17
+    MSG_NOT_AVAILABLE = 18
+    MSG_DELIVERY      = 19
+    COMPOUND_DIRECTED = 20
 
     _names = {
-        0: "Unknown", 1: "Heartbeat", 2: "DirectedMessage",
-        3: "SnrQuery", 4: "SnrReply", 5: "InfoQuery",
-        6: "InfoReply", 7: "StatusQuery", 8: "StatusReply",
-        9: "CompoundDirected",
+        0:  "Unknown",       1:  "Heartbeat",       2:  "DirectedMessage",
+        3:  "SnrQuery",      4:  "SnrReply",         5:  "InfoQuery",
+        6:  "InfoReply",     7:  "StatusQuery",      8:  "StatusReply",
+        9:  "GridQuery",     10: "GridReply",         11: "HearingQuery",
+        12: "HearingReply",  13: "AckMessage",        14: "MsgCommand",
+        15: "QueryMsgs",     16: "QueryMsg",          17: "MsgAvailable",
+        18: "MsgNotAvailable", 19: "MsgDelivery",    20: "CompoundDirected",
     }
 
     @classmethod
@@ -151,7 +165,7 @@ class Status:
     radio_mode: str
     tx_queue_size: int
     heartbeat_enabled: bool
-    heartbeat_interval_periods: int
+    heartbeat_interval_mins: int
     auto_reply: bool
     ws_port: int
     ws_clients: int
@@ -170,10 +184,67 @@ class Status:
         lines += [
             f"TX queue : {self.tx_queue_size} frame(s)",
             f"Heartbeat: {'on' if self.heartbeat_enabled else 'off'}"
-            f"  every {self.heartbeat_interval_periods} period(s)",
+            f"  every {self.heartbeat_interval_mins} min",
             f"Auto-reply: {'on' if self.auto_reply else 'off'}",
         ]
         return "\n".join(lines)
+
+
+@dataclass
+class BandEntry:
+    """A single entry in the user-editable band/frequency list."""
+    name: str
+    freq_khz: float
+    tx_freq_hz: float = 1500.0
+
+    def __str__(self) -> str:
+        return f"{self.name}  {self.freq_khz:.3f} kHz  TX+{self.tx_freq_hz:.0f}Hz"
+
+
+@dataclass
+class SolarData:
+    """NOAA solar indices snapshot."""
+    sfi: int
+    a_index: int
+    k_index: int
+    r_scale: int
+    band_conditions: str
+    updated_utc: Optional[datetime]
+
+    def r_scale_str(self) -> str:
+        return f"R{self.r_scale}"
+
+    def __str__(self) -> str:
+        return (f"SFI={self.sfi}  A={self.a_index}  K={self.k_index}  "
+                f"{self.r_scale_str()}  {self.band_conditions}")
+
+
+@dataclass
+class QsoEntry:
+    """A logged QSO."""
+    id: str
+    time: datetime
+    callsign: str
+    grid: str
+    snr_db: int
+    notes: str
+
+
+@dataclass
+class InboxMessage:
+    """A store-and-forward inbox message."""
+    id: int
+    utc: datetime
+    from_call: str
+    to: str
+    body: str
+    read: bool = False
+    delivered: bool = False
+
+    def __str__(self) -> str:
+        t = self.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        unread = "" if self.read else " (unread)"
+        return f"[{self.id}] {t}  {self.from_call} → {self.to}  {self.body}{unread}"
 
 
 @dataclass
@@ -189,7 +260,6 @@ class Config:
     tx_freq_hz: float
     tx_power_pct: int
     heartbeat_enabled: bool
-    heartbeat_interval_periods: int
     auto_reply: bool
     station_info: str
     station_status: str
@@ -207,8 +277,15 @@ class Config:
     rig_dtr_state: int
     rig_rts_state: int
     ptt_type: int
+    emulated_split: bool
     ws_enabled: bool
     ws_port: int
+    heartbeat_interval_mins: int = 10
+    heartbeat_sub_channel: bool = True
+    tx_enabled: bool = True
+    info_max_age_mins: int = 30
+    heard_max_age_mins: int = 30
+    band_list: List[BandEntry] = field(default_factory=list)
 
 
 @dataclass

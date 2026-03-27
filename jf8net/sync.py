@@ -246,6 +246,42 @@ class JF8ClientSync:
     ) -> None:
         self._run(self._async.send_and_wait(text, submode=submode, timeout=timeout))
 
+    def send_grid_query(self, to: str) -> int:
+        return self._run(self._async.send_grid_query(to))
+
+    def send_hearing_query(self, to: str) -> int:
+        return self._run(self._async.send_hearing_query(to))
+
+    def get_bands(self):
+        return self._run(self._async.get_bands())
+
+    def set_bands(self, bands) -> int:
+        return self._run(self._async.set_bands(bands))
+
+    def get_solar(self):
+        return self._run(self._async.get_solar())
+
+    def get_qso_log(self, offset: int = 0, limit: int = 100):
+        return self._run(self._async.get_qso_log(offset=offset, limit=limit))
+
+    def export_adif(self) -> str:
+        return self._run(self._async.export_adif())
+
+    def get_inbox(self, for_call: str = ""):
+        return self._run(self._async.get_inbox(for_call=for_call))
+
+    def inbox_send(self, to: str, body: str) -> bool:
+        return self._run(self._async.inbox_send(to, body))
+
+    def inbox_store(self, to: str, body: str) -> str:
+        return self._run(self._async.inbox_store(to, body))
+
+    def inbox_delete(self, msg_id: int) -> None:
+        self._run(self._async.inbox_delete(msg_id))
+
+    def inbox_mark_read(self, msg_id: int) -> None:
+        self._run(self._async.inbox_mark_read(msg_id))
+
     # ── Generator-style streaming ─────────────────────────────────────────────
 
     def messages(

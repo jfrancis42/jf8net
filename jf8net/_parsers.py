@@ -3,10 +3,11 @@ jf8net._parsers — Convert raw API dicts to typed model objects.
 """
 from __future__ import annotations
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, List
 from ._models import (
     DecodedMessage, FrameUpdate, Status, Config,
     RadioStatus, TxFrame, AudioDevices, Spectrum,
+    BandEntry, SolarData, QsoEntry, InboxMessage,
 )
 
 
@@ -62,14 +63,57 @@ def parse_status(d: dict) -> Status:
         radio_mode=str(d.get("radio_mode", "")),
         tx_queue_size=int(d.get("tx_queue_size", 0)),
         heartbeat_enabled=bool(d.get("heartbeat_enabled", False)),
-        heartbeat_interval_periods=int(d.get("heartbeat_interval_periods", 4)),
+        heartbeat_interval_mins=int(d.get("heartbeat_interval_mins", 10)),
         auto_reply=bool(d.get("auto_reply", False)),
         ws_port=int(d.get("ws_port", 2102)),
         ws_clients=int(d.get("ws_clients", 0)),
     )
 
 
+def parse_band_entry(d: dict) -> BandEntry:
+    return BandEntry(
+        name=str(d.get("name", "")),
+        freq_khz=float(d.get("freqKhz", 14078.0)),
+        tx_freq_hz=float(d.get("txFreqHz", 1500.0)),
+    )
+
+
+def parse_solar_data(d: dict) -> SolarData:
+    return SolarData(
+        sfi=int(d.get("sfi", 0)),
+        a_index=int(d.get("a_index", 0)),
+        k_index=int(d.get("k_index", 0)),
+        r_scale=int(d.get("r_scale", 0)),
+        band_conditions=str(d.get("band_conditions", "")),
+        updated_utc=_utc(d.get("updated_utc", "")) if d.get("updated_utc") else None,
+    )
+
+
+def parse_qso_entry(d: dict) -> QsoEntry:
+    return QsoEntry(
+        id=str(d.get("id", "")),
+        time=_utc(d.get("time", "")),
+        callsign=str(d.get("callsign", "")),
+        grid=str(d.get("grid", "")),
+        snr_db=int(d.get("snr_db", 0)),
+        notes=str(d.get("notes", "")),
+    )
+
+
+def parse_inbox_message(d: dict) -> InboxMessage:
+    return InboxMessage(
+        id=int(d.get("id", 0)),
+        utc=_utc(d.get("utc_iso", "")),
+        from_call=str(d.get("from", "")),
+        to=str(d.get("to", "")),
+        body=str(d.get("body", "")),
+        read=bool(d.get("read", False)),
+        delivered=bool(d.get("delivered", False)),
+    )
+
+
 def parse_config(d: dict) -> Config:
+    band_list = [parse_band_entry(b) for b in d.get("bandList", [])]
     return Config(
         callsign=str(d.get("callsign", "")),
         grid=str(d.get("grid", "")),
@@ -81,7 +125,6 @@ def parse_config(d: dict) -> Config:
         tx_freq_hz=float(d.get("txFreqHz", 0)),
         tx_power_pct=int(d.get("txPowerPct", 50)),
         heartbeat_enabled=bool(d.get("heartbeatEnabled", False)),
-        heartbeat_interval_periods=int(d.get("heartbeatIntervalPeriods", 4)),
         auto_reply=bool(d.get("autoReply", False)),
         station_info=str(d.get("stationInfo", "")),
         station_status=str(d.get("stationStatus", "")),
@@ -99,8 +142,15 @@ def parse_config(d: dict) -> Config:
         rig_dtr_state=int(d.get("rigDtrState", 2)),
         rig_rts_state=int(d.get("rigRtsState", 2)),
         ptt_type=int(d.get("pttType", 0)),
+        emulated_split=bool(d.get("emulatedSplit", False)),
         ws_enabled=bool(d.get("wsEnabled", True)),
         ws_port=int(d.get("wsPort", 2102)),
+        heartbeat_interval_mins=int(d.get("heartbeatIntervalMins", 10)),
+        heartbeat_sub_channel=bool(d.get("heartbeatSubChannel", True)),
+        tx_enabled=bool(d.get("txEnabled", True)),
+        info_max_age_mins=int(d.get("infoMaxAgeMins", 30)),
+        heard_max_age_mins=int(d.get("heardMaxAgeMins", 30)),
+        band_list=band_list,
     )
 
 
@@ -152,7 +202,7 @@ _SNAKE_TO_CAMEL = {
     "tx_freq_hz":                 "txFreqHz",
     "tx_power_pct":               "txPowerPct",
     "heartbeat_enabled":          "heartbeatEnabled",
-    "heartbeat_interval_periods": "heartbeatIntervalPeriods",
+    "heartbeat_interval_mins":    "heartbeatIntervalMins",
     "auto_reply":                 "autoReply",
     "station_info":               "stationInfo",
     "station_status":             "stationStatus",
@@ -170,8 +220,13 @@ _SNAKE_TO_CAMEL = {
     "rig_dtr_state":              "rigDtrState",
     "rig_rts_state":              "rigRtsState",
     "ptt_type":                   "pttType",
+    "emulated_split":             "emulatedSplit",
     "ws_enabled":                 "wsEnabled",
     "ws_port":                    "wsPort",
+    "heartbeat_sub_channel":      "heartbeatSubChannel",
+    "tx_enabled":                 "txEnabled",
+    "info_max_age_mins":          "infoMaxAgeMins",
+    "heard_max_age_mins":         "heardMaxAgeMins",
 }
 
 

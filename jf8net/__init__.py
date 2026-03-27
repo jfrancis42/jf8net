@@ -43,6 +43,10 @@ from ._models import (
     FrameType,
     ModemType,
     PttType,
+    BandEntry,
+    SolarData,
+    QsoEntry,
+    InboxMessage,
 )
 
 __version__ = "0.1.0"
@@ -62,4 +66,8 @@ __all__ = [
     "FrameType",
     "ModemType",
     "PttType",
+    "BandEntry",
+    "SolarData",
+    "QsoEntry",
+    "InboxMessage",
 ]

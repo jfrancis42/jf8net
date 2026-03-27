@@ -14,13 +14,14 @@ import websockets
 import websockets.exceptions
 
 from ._models import (
-    AudioDevices, Config, DecodedMessage, FrameUpdate,
-    RadioStatus, Spectrum, Status, TxFrame,
+    AudioDevices, BandEntry, Config, DecodedMessage, FrameUpdate,
+    InboxMessage, QsoEntry, RadioStatus, SolarData, Spectrum, Status, TxFrame,
 )
 from ._parsers import (
     config_kwargs_to_api,
-    parse_config, parse_decoded_message, parse_frame_update,
-    parse_radio_status, parse_spectrum, parse_status, parse_tx_frame,
+    parse_band_entry, parse_config, parse_decoded_message, parse_frame_update,
+    parse_inbox_message, parse_qso_entry, parse_radio_status,
+    parse_solar_data, parse_spectrum, parse_status, parse_tx_frame,
 )
 
 logger = logging.getLogger(__name__)
@@ -590,3 +591,76 @@ class JF8Client:
         """
         await self.send(text, submode=submode)
         await self.wait_for_tx(timeout=timeout)
+
+    # ── TX query helpers ──────────────────────────────────────────────────────
+
+    async def send_grid_query(self, to: str) -> int:
+        """Queue a ``TO MYCALL @GRID?`` request. Returns new queue size."""
+        d = await self._cmd("tx.grid", {"to": to.upper()})
+        return int(d.get("queue_size", 0))
+
+    async def send_hearing_query(self, to: str) -> int:
+        """Queue a ``TO MYCALL @HEARING?`` request. Returns new queue size."""
+        d = await self._cmd("tx.hearing", {"to": to.upper()})
+        return int(d.get("queue_size", 0))
+
+    # ── Band list ─────────────────────────────────────────────────────────────
+
+    async def get_bands(self) -> List[BandEntry]:
+        """Return the user-editable band/frequency list."""
+        d = await self._cmd("bands.get")
+        return [parse_band_entry(b) for b in d.get("bands", [])]
+
+    async def set_bands(self, bands: List[BandEntry]) -> int:
+        """Replace the band list. Pass an empty list to reset to factory defaults."""
+        payload = [{"name": b.name, "freqKhz": b.freq_khz, "txFreqHz": b.tx_freq_hz}
+                   for b in bands]
+        d = await self._cmd("bands.set", {"bands": payload})
+        return int(d.get("count", 0))
+
+    # ── Solar data ────────────────────────────────────────────────────────────
+
+    async def get_solar(self) -> SolarData:
+        """Return the latest NOAA solar indices."""
+        d = await self._cmd("solar.get")
+        return parse_solar_data(d)
+
+    # ── QSO log ───────────────────────────────────────────────────────────────
+
+    async def get_qso_log(self, offset: int = 0, limit: int = 100) -> List[QsoEntry]:
+        """Return logged QSOs."""
+        d = await self._cmd("qso.log.get", {"offset": offset, "limit": limit})
+        return [parse_qso_entry(q) for q in d.get("qsos", [])]
+
+    async def export_adif(self) -> str:
+        """Return the QSO log as an ADIF string."""
+        d = await self._cmd("qso.log.adif")
+        return str(d.get("adif", ""))
+
+    # ── Inbox ─────────────────────────────────────────────────────────────────
+
+    async def get_inbox(self, for_call: str = "") -> List[InboxMessage]:
+        """Return inbox messages. Pass *for_call* to filter by recipient."""
+        data: dict = {}
+        if for_call:
+            data["for"] = for_call.upper()
+        d = await self._cmd("inbox.get", data if data else None)
+        return [parse_inbox_message(m) for m in d.get("messages", [])]
+
+    async def inbox_send(self, to: str, body: str) -> bool:
+        """Send a message to *to* immediately via the TX queue."""
+        d = await self._cmd("inbox.send", {"to": to.upper(), "body": body})
+        return bool(d.get("queued", False))
+
+    async def inbox_store(self, to: str, body: str) -> str:
+        """Store a message for *to* to retrieve later. Returns the message ID."""
+        d = await self._cmd("inbox.store", {"to": to.upper(), "body": body})
+        return str(d.get("id", ""))
+
+    async def inbox_delete(self, msg_id: int) -> None:
+        """Delete an inbox message by ID."""
+        await self._cmd("inbox.delete", {"id": msg_id})
+
+    async def inbox_mark_read(self, msg_id: int) -> None:
+        """Mark an inbox message as read."""
+        await self._cmd("inbox.mark_read", {"id": msg_id})
